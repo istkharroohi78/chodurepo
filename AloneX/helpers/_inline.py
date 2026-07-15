@@ -1,8 +1,23 @@
+import random
 from pyrogram import enums, types
 from pyrogram.enums import ButtonStyle
 
 from AloneX import app, config, lang
 from AloneX.core.lang import lang_codes
+
+def time_to_seconds(time_str: str) -> int:
+    """Helper function to convert time string to seconds"""
+    try:
+        parts = time_str.split(':')
+        if len(parts) == 3:
+            return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+        elif len(parts) == 2:
+            return int(parts[0]) * 60 + int(parts[1])
+        elif len(parts) == 1:
+            return int(parts[0])
+    except:
+        return 0
+    return 0
 
 
 class Inline:
@@ -10,47 +25,82 @@ class Inline:
         self.ikm = types.InlineKeyboardMarkup
         self.ikb = types.InlineKeyboardButton
 
+    # 🎨 Dynamic Row-Wise Color Generator
+    def get_row_styles(self):
+        styles = [ButtonStyle.PRIMARY, ButtonStyle.SUCCESS, ButtonStyle.DANGER]
+        random.shuffle(styles)
+        return styles
+
+    # 🎵 Custom Progress Bar Generator (Can be imported & used anywhere in your bot)
+    def get_progress_bar(self, played_str: str, dur_str: str) -> str:
+        played_sec = time_to_seconds(str(played_str))
+        if str(dur_str).lower() in ["live", "unknown", "0"]:
+            duration_sec = 0
+        else:
+            duration_sec = time_to_seconds(str(dur_str))
+        
+        total_blocks = 10
+        if duration_sec > 0:
+            filled_blocks = int((played_sec / duration_sec) * total_blocks)
+        else:
+            filled_blocks = 0
+            
+        filled_blocks = min(max(filled_blocks, 0), total_blocks)
+        
+        # Adding the music emoji logic
+        if filled_blocks == 0:
+            bar = "🎵" + "▱" * (total_blocks - 1)
+        elif filled_blocks == total_blocks:
+            bar = "▰" * (total_blocks - 1) + "🎵"
+        else:
+            bar = "▰" * (filled_blocks - 1) + "🎵" + "▱" * (total_blocks - filled_blocks)
+            
+        return bar
+
+
     def cancel_dl(self, text) -> types.InlineKeyboardMarkup:
         return self.ikm([[self.ikb(text=text, callback_data=f"cancel_dl")]])
 
     def autoplay_markup(self, _lang: dict) -> types.InlineKeyboardMarkup:
+        style = self.get_row_styles()
         return self.ikm(
             [
                 [
                     self.ikb(
                         text=_lang.get("autoplay_panel_enable_btn", "Enable Autoplay"),
                         callback_data="autoplay_panel enable",
-                        style=ButtonStyle.SUCCESS,
+                        style=style[0],
                     )
                 ],
                 [
                     self.ikb(
                         text=_lang.get("autoplay_panel_info_btn", "Info"),
                         callback_data="autoplay_panel info",
-                        style=ButtonStyle.PRIMARY,
+                        style=style[1],
                     ),
                     self.ikb(
                         text=_lang.get("close", "⌯ 𝐂ʟσsє ⌯"),
                         callback_data="autoplay_panel close",
-                        style=ButtonStyle.DANGER,
+                        style=style[1],
                     ),
                 ],
             ]
         )
 
     def autoplay_info_markup(self, _lang: dict) -> types.InlineKeyboardMarkup:
+        style = self.get_row_styles()
         return self.ikm(
             [
                 [
                     self.ikb(
                         text=_lang.get("back", "𝐁ᴀᴄᴋ"),
                         callback_data="autoplay_panel back",
-                        style=ButtonStyle.PRIMARY,
+                        style=style[0],
                     ),
                     self.ikb(
                         text=_lang.get("close", "⌯ 𝐂ʟσsє ⌯"),
                         callback_data="autoplay_panel close",
-                        style=ButtonStyle.DANGER,
+                        style=style[0],
                     ),
                 ],
             ]
@@ -65,45 +115,60 @@ class Inline:
         _lang: dict = None,
     ) -> types.InlineKeyboardMarkup:
         keyboard = []
+        style = self.get_row_styles()
+
         if status:
             keyboard.append(
-                [self.ikb(text=status, callback_data=f"controls status {chat_id}")]
+                [self.ikb(text=status, callback_data=f"controls status {chat_id}", style=style[0])]
             )
         elif timer:
+            # 🎵 Inject music emoji dynamically as the song progresses
+            if "▰▱" in timer:
+                timer = timer.replace("▰▱", "🎵▱", 1)
+            elif "▱" * 10 in timer:
+                timer = timer.replace("▱" * 10, "🎵" + "▱" * 9)
+            elif "▰" * 10 in timer:
+                timer = timer.replace("▰" * 10, "▰" * 9 + "🎵")
+
             keyboard.append(
-                [self.ikb(text=timer, callback_data=f"controls status {chat_id}", style=ButtonStyle.PRIMARY)]
+                [self.ikb(text=timer, callback_data=f"controls status {chat_id}", style=style[0])]
             )
 
         if not remove:
+            # Step 2: Controls row
             keyboard.append(
                 [
-                    self.ikb(text="▷", callback_data=f"controls resume {chat_id}", style=ButtonStyle.SUCCESS),
-                    self.ikb(text="II", callback_data=f"controls pause {chat_id}", style=ButtonStyle.SUCCESS),
-                    self.ikb(text="⥁", callback_data=f"controls replay {chat_id}", style=ButtonStyle.PRIMARY),
-                    self.ikb(text="‣‣I", callback_data=f"controls skip {chat_id}", style=ButtonStyle.DANGER),
-                    self.ikb(text="▢", callback_data=f"controls stop {chat_id}", style=ButtonStyle.DANGER),
+                    self.ikb(text="▷", callback_data=f"controls resume {chat_id}", style=style[1]),
+                    self.ikb(text="II", callback_data=f"controls pause {chat_id}", style=style[1]),
+                    self.ikb(text="⥁", callback_data=f"controls replay {chat_id}", style=style[1]),
+                    self.ikb(text="‣‣I", callback_data=f"controls skip {chat_id}", style=style[1]),
+                    self.ikb(text="▢", callback_data=f"controls stop {chat_id}", style=style[1]),
                 ]
             )
+            
+            # Step 3: Autoplay & Clone row
             keyboard.append(
                 [
-                    self.ikb(text="≪ -20s", callback_data=f"controls seek_back {chat_id}", style=ButtonStyle.PRIMARY),
-                    self.ikb(text="🔄", callback_data=f"controls replay {chat_id}", style=ButtonStyle.PRIMARY),
-                    self.ikb(text="+20s ≫", callback_data=f"controls seek_fwd {chat_id}", style=ButtonStyle.PRIMARY),
+                    self.ikb(text="ᴀᴜᴛᴏ-ᴘʟᴀʏ", callback_data="help autoplay", style=style[2]),
+                    self.ikb(text="ᴄʟᴏɴᴇ-ᴍᴇ", url="https://t.me/clone_MUSICrobot", style=style[2]),
                 ]
             )
+            
             if not _lang:
                 _lang = lang.languages["en"]
+                
+            # Step 4: Add Me & Close row
             keyboard.append(
                 [
                     self.ikb(
                         text="➕ Add Me",
                         url=f"https://t.me/{app.username}?startgroup=true",
-                        style=ButtonStyle.SUCCESS,
+                        style=style[0], # Loops back to 0 for a new color
                     ),
                     self.ikb(
                         text=_lang.get("close", "⌯ 𝐂ʟσsє ⌯"),
                         callback_data="help close",
-                        style=ButtonStyle.DANGER,
+                        style=style[0],
                     ),
                 ]
             )
@@ -113,41 +178,56 @@ class Inline:
     def help_markup(
         self, _lang: dict, back: bool = False
     ) -> types.InlineKeyboardMarkup:
+        style = self.get_row_styles()
+        
         if back:
             rows = [
                 [
-                    self.ikb(text=_lang["back"], callback_data="help back", style=ButtonStyle.PRIMARY),
-                    self.ikb(text=_lang.get("home_btn", "🏠 Home"), callback_data="help home", style=ButtonStyle.SUCCESS),
-                    self.ikb(text=_lang["close"], callback_data="help close", style=ButtonStyle.DANGER),
+                    self.ikb(text=_lang["back"], callback_data="help back", style=style[0]),
+                    self.ikb(text=_lang.get("home_btn", "🏠 Home"), callback_data="help home", style=style[0]),
+                    self.ikb(text=_lang["close"], callback_data="help close", style=style[0]),
                 ]
             ]
         else:
             cbs = ["admins", "auth", "blist", "lang", "ping", "play", "queue", "stats", "sudo", "autoplay", "vclogger"]
-            buttons = [
-                self.ikb(text=_lang[f"help_{i}"], callback_data=f"help {cb}", style=ButtonStyle.PRIMARY)
-                for i, cb in enumerate(cbs)
-            ]
-            rows = [buttons[i : i + 3] for i in range(0, len(buttons), 3)]
+            rows = []
+            
+            # Row-wise constant coloring for Help menu
+            for i in range(0, len(cbs), 3):
+                row_cbs = cbs[i : i + 3]
+                row_style = style[(i // 3) % 3]
+                rows.append([
+                    self.ikb(text=_lang[f"help_{cb}"], callback_data=f"help {cb}", style=row_style)
+                    for cb in row_cbs
+                ])
+                
+            last_style = style[len(rows) % 3]
             rows.append(
                 [
-                    self.ikb(text=_lang.get("home_btn", "🏠 Home"), callback_data="help home", style=ButtonStyle.SUCCESS),
-                    self.ikb(text=_lang["close"], callback_data="help close", style=ButtonStyle.DANGER),
+                    self.ikb(text=_lang.get("home_btn", "🏠 Home"), callback_data="help home", style=last_style),
+                    self.ikb(text=_lang["close"], callback_data="help close", style=last_style),
                 ]
             )
 
         return self.ikm(rows)
 
     def lang_markup(self, _lang: str) -> types.InlineKeyboardMarkup:
-        langs = lang.get_languages()
+        style = self.get_row_styles()
+        langs = list(lang.get_languages().items())
 
-        buttons = [
-            self.ikb(
-                text=f"{name} ({code}) {'✔️' if code == _lang else ''}",
-                callback_data=f"lang_change {code}",
-            )
-            for code, name in langs.items()
-        ]
-        rows = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
+        rows = []
+        for i in range(0, len(langs), 2):
+            row_langs = langs[i : i + 2]
+            row_style = style[(i // 2) % 3]
+            rows.append([
+                self.ikb(
+                    text=f"{name} ({code}) {'✔️' if code == _lang else ''}",
+                    callback_data=f"lang_change {code}",
+                    style=row_style
+                )
+                for code, name in row_langs
+            ])
+            
         return self.ikm(rows)
 
     def ping_markup(self, text: str) -> types.InlineKeyboardMarkup:
@@ -187,27 +267,20 @@ class Inline:
     def settings_markup(
         self, lang: dict, admin_only: bool, cmd_delete: bool, language: str, chat_id: int
     ) -> types.InlineKeyboardMarkup:
+        style = self.get_row_styles()
         return self.ikm(
             [
                 [
-                    self.ikb(
-                        text=lang["play_mode"] + " ➜",
-                        callback_data="settings",
-                    ),
-                    self.ikb(text=admin_only, callback_data="settings play"),                ],
-                [
-                    self.ikb(
-                        text=lang["cmd_delete"] + " ➜",
-                        callback_data="settings",
-                    ),
-                    self.ikb(text=cmd_delete, callback_data="settings delete"),
+                    self.ikb(text=lang["play_mode"] + " ➜", callback_data="settings", style=style[0]),
+                    self.ikb(text=admin_only, callback_data="settings play", style=style[0]),
                 ],
                 [
-                    self.ikb(
-                        text=lang["language"] + " ➜",
-                        callback_data="settings",
-                    ),
-                    self.ikb(text=lang_codes[language], callback_data="language"),
+                    self.ikb(text=lang["cmd_delete"] + " ➜", callback_data="settings", style=style[1]),
+                    self.ikb(text=cmd_delete, callback_data="settings delete", style=style[1]),
+                ],
+                [
+                    self.ikb(text=lang["language"] + " ➜", callback_data="settings", style=style[2]),
+                    self.ikb(text=lang_codes[language], callback_data="language", style=style[2]),
                 ],
             ]
         )
@@ -215,42 +288,43 @@ class Inline:
     def start_key(
         self, lang: dict, private: bool = False
     ) -> types.InlineKeyboardMarkup:
+        style = self.get_row_styles()
         rows = [
             [
                 self.ikb(
                     text=lang["add_me"],
-                    url=f"https://t.me/{app.username}?startgroup=true", style=ButtonStyle.PRIMARY
+                    url=f"https://t.me/{app.username}?startgroup=true", 
+                    style=style[0]
                 )
             ],
-            [self.ikb(text=lang["help"], callback_data="help", style=ButtonStyle.DANGER)],
+            [self.ikb(text=lang["help"], callback_data="help", style=style[1])],
         ]
+        
         if private:
             rows += [
                 [
-                    self.ikb(text=lang["aloneowner"], url=config.OWNER_USERNAME, style=ButtonStyle.SUCCESS),
-                    self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL, style=ButtonStyle.SUCCESS),
-                    self.ikb(
-                        text=lang["source"],
-                        url="https://github.com/TeamShonax/ShonaX", style=ButtonStyle.SUCCESS
-                    ),
+                    self.ikb(text=lang[" ⎎ THE SHIV ⎎ "], url=config.OWNER_USERNAME, style=style[2]),
+                    self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL, style=style[2]),
                 ]
             ]
         else:
             rows += [
                 [
-                    self.ikb(text=lang["support"], url=config.SUPPORT_CHAT, style=ButtonStyle.SUCCESS),
-                    self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL, style=ButtonStyle.SUCCESS),
+                    self.ikb(text=lang["support"], url=config.SUPPORT_CHAT, style=style[2]),
+                    self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL, style=style[2]),
                 ],
-                [self.ikb(text=lang["language"], callback_data="language")],
+                [self.ikb(text=lang["language"], callback_data="language", style=style[0])],
             ]
+            
         return self.ikm(rows)
 
     def yt_key(self, link: str) -> types.InlineKeyboardMarkup:
+        style = self.get_row_styles()
         return self.ikm(
             [
                 [
-                    self.ikb(text="❐", copy_text=link),
-                    self.ikb(text="Youtube", url=link),
+                    self.ikb(text="❐", copy_text=link, style=style[0]),
+                    self.ikb(text="Youtube", url=link, style=style[0]),
                 ],
             ]
-                    )
+        )
