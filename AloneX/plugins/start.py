@@ -1,7 +1,7 @@
-# Copyright (c) 2025 TheHamkerAlone
+# Copyright (c) 2026 THE SHIV
 # Licensed under the MIT License.
-# This file is part of AloneXMusic
-#ALONE-CODER
+# This file is part of MahiMusic
+# DEVELOPER - THE SHIV
 
 import asyncio
 from pyrogram import enums, filters, types
@@ -26,10 +26,27 @@ async def start(_, message: types.Message):
     if message.from_user.id in app.bl_users and message.from_user.id not in db.notified:
         return await message.reply_text(message.lang["bl_user_notify"])
 
+    private = message.chat.type == enums.ChatType.PRIVATE
+
+    # --- LOADING ANIMATION SEQUENCE FOR PRIVATE CHAT ---
+    if private:
+        loading_1 = await message.reply_text("<b>ᴌᴏᴀᴅɪɴɢ....</b>")
+        await asyncio.sleep(0.3)
+        await loading_1.edit_text("<b>ꜱᴛᴀʀᴛɪɴɢ..ʙᴀʙʏ.❤️❤️</b>")
+        await asyncio.sleep(0.3)
+        await loading_1.edit_text("<b>ɪ ᴀᴍ ᴀʟɪᴠᴇ ʙᴀʙʏ❤️😌🫣🫣</b>")
+        await asyncio.sleep(0.5)
+        await loading_1.edit_text("<b>BETA ʙᴏᴛs🫣🫣.</b>")
+        await asyncio.sleep(0.5)
+        await loading_1.delete()
+
+    # --- HANDLE /start help ---
     if len(message.command) > 1 and message.command[1] == "help":
+        if private:
+            # Sticker Before Image in /start help
+            await message.reply_sticker("CAACAgUAAxkBAAFJgZ1qBGwx9Z9vW5BhG3dw0l1A5j4CyQACXRYAAuc-wVWs4--9DGlDKzsE")
         return await _help(_, message)
 
-    private = message.chat.type == enums.ChatType.PRIVATE
     _text = (
         message.lang["start_pm"].format(message.from_user.first_name, app.name)
         if private
@@ -37,11 +54,14 @@ async def start(_, message: types.Message):
     )
 
     key = buttons.start_key(message.lang, private)
+    
+    # --- SEND IMAGE BELOW TEXT ---
     await message.reply_photo(
         photo=config.START_IMG,
         caption=_text,
         reply_markup=key,
         quote=not private,
+        invert_media=True 
     )
 
     if private:
