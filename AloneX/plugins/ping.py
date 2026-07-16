@@ -19,9 +19,10 @@ async def _ping(_, m: types.Message):
     get_time = lambda s: (lambda r: (f"{r[-1]}, " if r[-1][:-4] != "0" else "") + ":".join(reversed(r[:-1])))([f"{v}{u}" for v, u in zip([s%60, (s//60)%60, (s//3600)%24, s//86400], ["s", "m", "h", "days"])])
     uptime = get_time(int(time.time() - boot))
     latency = round((time.time() - start) * 1000, 2)
+    
     await sent.edit_media(
-        media=types.InputMediaPhoto(
-            media=config.PING_IMG,
+        media=types.InputMediaVideo(  # 👈 Yahan InputMediaPhoto se InputMediaVideo kar diya gaya hai
+            media=config.PING_IMG,    # ⚠️ Dhyan rakhna: config.py me PING_IMG ek video (.mp4) ka URL ya File ID hona chahiye
             caption=m.lang["ping_pong"].format(
                 latency,
                 uptime,
