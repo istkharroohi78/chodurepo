@@ -1,7 +1,7 @@
-# Copyright (c) 2025 TheHamkerAlone
+# Copyright (c) 2026 THE SHIV
 # Licensed under the MIT License.
-# This file is part of AloneXMusic
-#ALONE-CODER
+# This file is part of MahiMusic
+# DEVELOPER - THE SHIV
 
 import asyncio
 
@@ -77,49 +77,57 @@ def checkUB(play):
                         )
             except errors.ChatAdminRequired:
                 return await m.reply_text(m.lang["admin_required"])
-            except (errors.UserNotParticipant, errors.exceptions.bad_request_400.UserNotParticipant):
-                if m.chat.username:
-                    invite_link = m.chat.username
-                    try:
-                        await client.resolve_peer(invite_link)
-                    except:
-                        pass
-                else:
-                    try:
-                        invite_link = (await app.get_chat(chat_id)).invite_link
-                        if not invite_link:
-                            invite_link = await app.export_chat_invite_link(chat_id)
-                    except errors.ChatAdminRequired:
-                        return await m.reply_text(m.lang["admin_required"])
-                    except Exception as ex:
-                        return await m.reply_text(
-                            m.lang["play_invite_error"].format(type(ex).__name__)
-                        )
+            except Exception as e:
+                # 🛠️ BULLETPROOF ERROR CATCHING: Catches all variations of UserNotParticipant
+                if "USER_NOT_PARTICIPANT" in str(e) or isinstance(e, errors.UserNotParticipant):
+                    if m.chat.username:
+                        invite_link = m.chat.username
+                        try:
+                            await client.resolve_peer(invite_link)
+                        except:
+                            pass
+                    else:
+                        try:
+                            invite_link = (await app.get_chat(chat_id)).invite_link
+                            if not invite_link:
+                                invite_link = await app.export_chat_invite_link(chat_id)
+                        except errors.ChatAdminRequired:
+                            return await m.reply_text(m.lang["admin_required"])
+                        except Exception as ex:
+                            return await m.reply_text(
+                                m.lang["play_invite_error"].format(type(ex).__name__)
+                            )
 
-                umm = await m.reply_text(m.lang["play_invite"].format(app.name))
-                await asyncio.sleep(2)
-                try:
-                    await client.join_chat(invite_link)
-                except errors.UserAlreadyParticipant:
-                    pass
-                except errors.InviteRequestSent:
+                    umm = await m.reply_text(m.lang["play_invite"].format(app.name))
                     await asyncio.sleep(2)
                     try:
-                        await client.approve_chat_join_request(chat_id, client.id)
-                    except errors.HideRequesterMissing:
+                        await client.join_chat(invite_link)
+                    except errors.UserAlreadyParticipant:
                         pass
+                    except errors.InviteRequestSent:
+                        await asyncio.sleep(2)
+                        try:
+                            await client.approve_chat_join_request(chat_id, client.id)
+                        except errors.HideRequesterMissing:
+                            pass
+                        except Exception as ex:
+                            return await umm.edit_text(
+                                m.lang["play_invite_error"].format(type(ex).__name__)
+                            )
                     except Exception as ex:
+                        logger.error(f"Error joining chat - {chat_id}: {ex}")
                         return await umm.edit_text(
                             m.lang["play_invite_error"].format(type(ex).__name__)
                         )
-                except Exception as ex:
-                    logger.error(f"Error joining chat - {chat_id}: {ex}")
-                    return await umm.edit_text(
-                        m.lang["play_invite_error"].format(type(ex).__name__)
-                    )
 
-                await umm.delete()
-                await client.resolve_peer(chat_id)
+                    await umm.delete()
+                    try:
+                        await client.resolve_peer(chat_id)
+                    except:
+                        pass
+                else:
+                    # Logs other unexpected errors without crashing
+                    logger.error(f"Unexpected error in checkUB: {e}")
 
         if await db.get_cmd_delete(chat_id):
             try:
