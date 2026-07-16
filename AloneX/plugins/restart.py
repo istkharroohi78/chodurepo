@@ -1,7 +1,7 @@
-# Copyright (c) 2025 TheHamkerAlone
+# Copyright (c) 2026 THE SHIV
 # Licensed under the MIT License.
-# This file is part of AloneXMusic
-#ALONE-CODER
+# This file is part of MahiMusic
+# DEVELOPER - THE SHIV
 
 import os
 import sys
@@ -9,6 +9,7 @@ import shutil
 import asyncio
 
 from pyrogram import filters, types
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from AloneX import app, db, lang, stop
 
@@ -43,19 +44,85 @@ async def _logger(_, m: types.Message):
         await m.reply_text(m.lang["logger_off"])
 
 
+# ==========================================
+# 🔄 RESTART COMMAND WITH INLINE BUTTONS
+# ==========================================
 @app.on_message(filters.command(["restart"]) & app.sudoers)
 @lang.language()
 async def _restart(_, m: types.Message):
-    sent = await m.reply_text(m.lang["restarting"])
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("🔄 ʀᴇsᴛᴀʀᴛ", callback_data="bot_reboot"),
+                InlineKeyboardButton("⬇️ ᴜᴘᴅᴀᴛᴇ", callback_data="bot_update")
+            ],
+            [
+                InlineKeyboardButton("❌ ᴄᴀɴᴄᴇʟ", callback_data="bot_cancel")
+            ]
+        ]
+    )
+    
+    await m.reply_text(
+        "<blockquote><b>⚠️ ᴡʜᴀᴛ ᴅᴏ ʏᴏᴜ ᴡᴀɴᴛ ᴛᴏ ᴅᴏ ᴡɪᴛʜ ᴛʜᴇ ʙᴏᴛ?</b></blockquote>",
+        reply_markup=keyboard
+    )
 
+
+# ==========================================
+# 🛠️ CALLBACK HANDLERS FOR RESTART MENU 🛠️
+# ==========================================
+
+# Yeh function humara common restart logic run karega
+async def reboot_system():
     for directory in ["cache", "downloads"]:
         shutil.rmtree(directory, ignore_errors=True)
 
-    await sent.edit_text(m.lang["restarted"])
     asyncio.create_task(stop())
     await asyncio.sleep(2)
 
-    try: os.remove("log.txt")
-    except: pass
+    try:
+        os.remove("log.txt")
+    except:
+        pass
 
     os.execl(sys.executable, sys.executable, "-m", "AloneX")
+
+
+@app.on_callback_query(filters.regex("^bot_reboot$") & app.sudoers)
+async def restart_cb(_, query: types.CallbackQuery):
+    await query.message.edit_text("<blockquote><b>🔄 ʀᴇsᴛᴀʀᴛɪɴɢ ʙᴏᴛ... ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ.</b></blockquote>")
+    await reboot_system()
+
+
+@app.on_callback_query(filters.regex("^bot_update$") & app.sudoers)
+async def update_cb(_, query: types.CallbackQuery):
+    await query.message.edit_text("<blockquote><b>⬇️ ꜰᴇᴛᴄʜɪɴɢ ᴜᴘᴅᴀᴛᴇs ꜰʀᴏᴍ ɢɪᴛ...</b></blockquote>")
+    try:
+        # Pushing Git Pull Command to Server
+        process = await asyncio.create_subprocess_shell(
+            "git pull",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        out = stdout.decode()
+        
+        # Checking Git Output
+        if "Already up to date." in out:
+            return await query.message.edit_text("<blockquote><b>✅ ʙᴏᴛ ɪs ᴀʟʀᴇᴀᴅʏ ᴜᴘ-ᴛᴏ-ᴅᴀᴛᴇ!\n\nɴᴏ ɴᴇᴇᴅ ᴛᴏ ʀᴇsᴛᴀʀᴛ.</b></blockquote>")
+            
+        elif "fatal:" in out or "error:" in out.lower():
+            return await query.message.edit_text(f"<blockquote><b>❌ ᴜᴘᴅᴀᴛᴇ ꜰᴀɪʟᴇᴅ:</b>\n\n<code>{out[:1000]}</code></blockquote>")
+            
+        else:
+            await query.message.edit_text(f"<blockquote><b>✅ ᴜᴘᴅᴀᴛᴇ sᴜᴄᴄᴇssꜰᴜʟ!</b>\n\n<code>{out[:1000]}</code>\n\n<b>🔄 ʀᴇsᴛᴀʀᴛɪɴɢ ɴᴏᴡ...</b></blockquote>")
+            await reboot_system()
+            
+    except Exception as e:
+        await query.message.edit_text(f"<blockquote><b>❌ ᴜᴘᴅᴀᴛᴇ ᴇʀʀᴏʀ:</b>\n\n<code>{str(e)}</code></blockquote>")
+
+
+@app.on_callback_query(filters.regex("^bot_cancel$") & app.sudoers)
+async def cancel_cb(_, query: types.CallbackQuery):
+    await query.answer("❌ ᴀᴄᴛɪᴏɴ ᴄᴀɴᴄᴇʟʟᴇᴅ", show_alert=False)
+    await query.message.delete()
