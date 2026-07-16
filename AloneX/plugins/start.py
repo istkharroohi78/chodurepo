@@ -107,60 +107,52 @@ async def _new_member(_, message: types.Message):
 
 
 # ==========================================
-# 🛠️ EDIT SYSTEM FOR HELP & START BUTTONS 🛠️
+# 🛠️ EDIT SYSTEM FOR HELP, START & CLOSE 🛠️
 # ==========================================
 
-# Jab koi "Help & Commands" button dabayega, toh start menu edit ho jayega
-@app.on_callback_query(filters.regex("^help$") & ~app.bl_users)
+# Ek single handler jo Home, Help aur uske sabhi sub-menus ko properly route karega
+@app.on_callback_query(filters.regex(r"^help(?: (.*))?$") & ~app.bl_users)
 @lang.language()
-async def help_menu_cb(_, query: types.CallbackQuery):
-    try:
-        await query.message.edit_caption(
-            caption=query.lang["help_menu"],
-            reply_markup=buttons.help_markup(query.lang)
-        )
-    except MessageNotModified:
-        pass
-    await query.answer()
-
-
-# Jab koi "Home" button dabayega, toh help menu wapas start menu me edit ho jayega
-@app.on_callback_query(filters.regex("^help home$") & ~app.bl_users)
-@lang.language()
-async def home_menu_cb(_, query: types.CallbackQuery):
-    private = query.message.chat.type == enums.ChatType.PRIVATE
-    _text = (
-        query.lang["start_pm"].format(query.from_user.first_name, app.name)
-        if private
-        else query.lang["start_gp"].format(app.name)
-    )
-    try:
-        await query.message.edit_caption(
-            caption=_text,
-            reply_markup=buttons.start_key(query.lang, private)
-        )
-    except MessageNotModified:
-        pass
-    await query.answer()
-
-
-# Help Menu ke andar wale buttons (Admins, Play, Sudo, etc.) ko handle karne ke liye
-@app.on_callback_query(filters.regex(r"^help (.+)") & ~app.bl_users)
-@lang.language()
-async def help_submenu_cb(_, query: types.CallbackQuery):
+async def unified_help_menu_cb(_, query: types.CallbackQuery):
     module = query.matches[0].group(1)
-    
-    # Ye avoid karega ki "home" ya "close" commands isme process na ho jayein
-    if module in ["home", "close", "back"]: 
-        return
-        
+    private = query.message.chat.type == enums.ChatType.PRIVATE
+
     try:
-        await query.message.edit_caption(
-            caption=query.lang[f"help_{module}"],
-            reply_markup=buttons.help_markup(query.lang, back=True)
-        )
+        if not module: 
+            # Agar sirf "help" data aaya hai, toh Help Menu par edit karega
+            await query.message.edit_caption(
+                caption=query.lang["help_menu"],
+                reply_markup=buttons.help_markup(query.lang)
+            )
+        elif module == "home": 
+            # Agar "help home" aaya hai, toh Start Menu par wapas edit karega
+            _text = (
+                query.lang["start_pm"].format(query.from_user.first_name, app.name)
+                if private
+                else query.lang["start_gp"].format(app.name)
+            )
+            await query.message.edit_caption(
+                caption=_text,
+                reply_markup=buttons.start_key(query.lang, private)
+            )
+        else: 
+            # Help ke andar wale menus (Admins, Play, etc.)
+            await query.message.edit_caption(
+                caption=query.lang[f"help_{module}"],
+                reply_markup=buttons.help_markup(query.lang, back=True)
+            )
     except MessageNotModified:
         pass
+    except Exception as e:
+        print(f"Edit Error: {e}")
+        
+    await query.answer()
+
+# Close button ka handler taaki panel theek se delete ho sake
+@app.on_callback_query(filters.regex("^(close|close_panel)$") & ~app.bl_users)
+async def close_menu_cb(_, query: types.CallbackQuery):
+    try:
+        await query.message.delete()
     except Exception:
         pass
     await query.answer()
