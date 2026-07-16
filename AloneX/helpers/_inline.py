@@ -64,7 +64,7 @@ class Inline:
     def cancel_dl(self, text) -> types.InlineKeyboardMarkup:
         return self.ikm([[self.ikb(text=text, callback_data=f"cancel_dl")]])
 
-    # 🆕 Autoplay Panel System (Error fixed: SECONDARY -> DANGER)
+    # 🆕 Autoplay Panel System
     def autoplay_panel_markup(self, chat_id: int, enabled: bool) -> types.InlineKeyboardMarkup:
         status = "🟢 𝐄ɴᴀʙʟᴇᴅ" if enabled else "🔴 𝐃ɪsᴀʙʟᴇᴅ"
         
@@ -118,7 +118,6 @@ class Inline:
                 [self.ikb(text=status, callback_data=f"controls status {chat_id}", style=style[0])]
             )
         elif timer:
-            # 🎵 Forcefully inject the new progress bar using Regex
             try:
                 times = re.findall(r'\d+:\d+(?::\d+)?', timer)
                 if len(times) == 2:
@@ -138,7 +137,6 @@ class Inline:
             )
 
         if not remove:
-            # Step 2: Controls row
             keyboard.append(
                 [
                     self.ikb(text="▷", callback_data=f"controls resume {chat_id}", style=style[1]),
@@ -149,10 +147,10 @@ class Inline:
                 ]
             )
             
-            # Step 3: Autoplay & Clone row
+            # 🛠️ YAHAN PAR BUTTON KO PANEL OPEN SE LINK KIYA GAYA HAI
             keyboard.append(
                 [
-                    self.ikb(text="ᴀᴜᴛᴏ-ᴘʟᴀʏ", callback_data="help autoplay", style=style[2]),
+                    self.ikb(text="▶️ 𝐀ᴜᴛᴏ-𝐏ʟᴀʏ", callback_data=f"AUTOPLAY_PANEL_OPEN|{chat_id}", style=style[2]),
                     self.ikb(text="ᴄʟᴏɴᴇ-ᴍᴇ", url="https://t.me/clone_MUSICrobot", style=style[2]),
                 ]
             )
@@ -160,7 +158,6 @@ class Inline:
             if not _lang:
                 _lang = lang.languages["en"]
                 
-            # Step 4: Add Me & Close row
             keyboard.append(
                 [
                     self.ikb(
@@ -177,7 +174,6 @@ class Inline:
             )
         return self.ikm(keyboard)
 
-    # 🛠️ Fixed Help Menu
     def help_markup(
         self, _lang: dict, back: bool = False
     ) -> types.InlineKeyboardMarkup:
