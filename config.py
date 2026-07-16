@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# This is the new variable that broadcast.py was looking for
+MONGO_DB_URI = getenv("MONGO_URL", "Apna Mongo Db Dalo")
+
 class Config:
     def __init__(self):
         self.API_ID = int(getenv("API_ID", "17596251"))
