@@ -5,10 +5,12 @@
 import os
 import time
 import asyncio
+import random
 from pyrogram import errors, filters, types
 from pyrogram.enums import ChatMembersFilter
 from pyrogram.errors import FloodWait
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.enums import ButtonStyle
 from motor.motor_asyncio import AsyncIOMotorClient
 
 # Using standard AloneX imports
@@ -61,18 +63,30 @@ async def delete_promo_record(chat_id: int, message_id: int):
 # ==========================================
 PROMO_IMAGE = "https://n.uguu.se/EBVPCnuG.jpg"
 PROMO_TEXT = """
-⊚ ᴛʜɪꜱ ɪꜱ [˹♪ Mariya x Music ♪˼ \[ 💌 \]](https://t.me/royal_musics_bot)
+<blockquote><b>⊚ ᴛʜɪꜱ ɪꜱ <a href="https://t.me/royal_musics_bot">˹♪ Mariya x Music ♪˼ [ 💌 ]</a>
 
 ➻ ᴧ ᴘʀєᴍɪᴜᴍ ᴅєꜱɪɢηєᴅ ϻᴜꜱɪᴄ ᴘʟᴧʏєʀ ʙσᴛ ꜰσʀ ᴛєʟєɢʀᴧϻ ɢʀσᴜᴘ & ᴄʜᴧηηєʟ. 
 🎧 24x7 ᴍᴜꜱɪᴄ • ꜱᴍᴏᴏᴛʜ ᴀɴᴅ ꜰᴀꜱᴛ ᴘʟᴀʏʙᴀᴄᴋ
 
 ⚡️ ᴇɴᴊᴏʏ ᴜɴʟɪᴍɪᴛᴇᴅ ꜱᴏɴɢꜱ, qᴜɪᴄᴋ ʀᴇꜱᴘᴏɴꜱᴇ, ᴀɴᴅ ᴄʟᴇᴀʀ ᴀᴜᴅɪᴏ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ.
 
-ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ, ᴍᴀᴋᴇ ᴍᴇ ᴀᴅᴍɪɴ, ᴀɴᴅ ꜱᴇɴᴅ /play song name ᴛᴏ ꜱᴛᴀʀᴛ ᴛʜᴇ ᴍᴜꜱɪᴄ.
+ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ, ᴍᴀᴋᴇ ᴍᴇ ᴀᴅᴍɪɴ, ᴀɴᴅ ꜱᴇɴᴅ /play song name ᴛᴏ ꜱᴛᴀʀᴛ ᴛʜᴇ ᴍᴜꜱɪᴄ.</b></blockquote>
 """
-PROMO_BUTTON = InlineKeyboardMarkup(
-    [[InlineKeyboardButton("🎵 Aᴅᴅ ᴍᴇ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🎧", url=f"https://t.me/{app.username}?startgroup=true")]]
-)
+
+def get_random_button():
+    styles = [ButtonStyle.PRIMARY, ButtonStyle.SUCCESS]
+    random.shuffle(styles)
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    "🎵 Aᴅᴅ ᴍᴇ ɪɴ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🎧", 
+                    url=f"https://t.me/{app.username}?startgroup=true",
+                    style=styles[0]
+                )
+            ]
+        ]
+    )
 
 # ==========================================
 # MAIN BROADCAST COMMAND (Upgraded)
@@ -247,7 +261,12 @@ async def run_promo_broadcast(status_message=None):
     for user in users:
         user_id = user["user_id"] if isinstance(user, dict) else user
         try:
-            msg = await app.send_photo(chat_id=int(user_id), photo=PROMO_IMAGE, caption=PROMO_TEXT, reply_markup=PROMO_BUTTON)
+            msg = await app.send_photo(
+                chat_id=int(user_id), 
+                photo=PROMO_IMAGE, 
+                caption=PROMO_TEXT, 
+                reply_markup=get_random_button()
+            )
             await save_promo_msg(int(user_id), msg.id)
             u_success += 1
         except FloodWait as e:
@@ -262,7 +281,12 @@ async def run_promo_broadcast(status_message=None):
     for chat in chats:
         chat_id = chat["chat_id"] if isinstance(chat, dict) else chat
         try:
-            msg = await app.send_photo(chat_id=int(chat_id), photo=PROMO_IMAGE, caption=PROMO_TEXT, reply_markup=PROMO_BUTTON)
+            msg = await app.send_photo(
+                chat_id=int(chat_id), 
+                photo=PROMO_IMAGE, 
+                caption=PROMO_TEXT, 
+                reply_markup=get_random_button()
+            )
             await save_promo_msg(int(chat_id), msg.id)
             g_success += 1
         except FloodWait as e:
