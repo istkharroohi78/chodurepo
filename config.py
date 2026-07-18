@@ -23,7 +23,7 @@ class Config:
 
         self.SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/betabot_support")
         self.SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/betabot_hub")
-        self.OWNER_USERNAME = getenv("OWNER_USERNAME", "https://t.me/sukoon_s")
+        self.OWNER_USERNAME = getenv("OWNER_USERNAME", "https://t.me/ll_alexx_lll")
 
         self.AUTO_END: bool = getenv("AUTO_END", False)
         self.AUTO_LEAVE: bool = getenv("AUTO_LEAVE", False)
