@@ -151,7 +151,7 @@ class Inline:
             keyboard.append(
                 [
                     self.ikb(text="▶️ 𝐀ᴜᴛᴏ-𝐏ʟᴀʏ", callback_data=f"AUTOPLAY_PANEL_OPEN|{chat_id}", style=style[2]),
-                    self.ikb(text="ᴄʟᴏɴᴇ-ᴍᴇ", url="https://t.me/clone_MUSICrobot", style=style[2]),
+                    self.ikb(text="ᴄʟᴏɴᴇ-ᴍᴇ", url="https://t.me/SizzuMusicBot", style=style[2]),
                 ]
             )
             
@@ -318,7 +318,7 @@ class Inline:
                     self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL, style=style[2]),
                 ],
                 [
-                    self.ikb(text="THE SHIV", url=config.OWNER_USERNAME, style=style[0]),
+                    self.ikb(text="THE KING", url=config.OWNER_USERNAME, style=style[0]),
                 ]
             ]
         else:
